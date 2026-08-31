@@ -1,0 +1,152 @@
+name: Update YouTube Videos
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  update-videos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Fetch and Filter YouTube Videos
+        run: |
+          node << 'EOF'
+          const https = require('https');
+          const fs = require('fs');
+          
+          const apiKey = process.env.YOUTUBE_API_KEY;
+          const channelId = 'UC1OkdmI61L1GJ6GuO9fRaDQ';
+          
+          // Wrap https.get in a Promise
+          function makeRequest(url) {
+            return new Promise((resolve, reject) => {
+              https.get(url, (res) => {
+                let body = '';
+                res.on('data', chunk => body += chunk);
+                res.on('end', () => {
+                  try {
+                    resolve(JSON.parse(body));
+                  } catch (error) {
+                    reject(new Error(`Failed to parse JSON: ${error.message}`));
+                  }
+                });
+              }).on('error', (error) => {
+                reject(new Error(`HTTP request failed: ${error.message}`));
+              });
+            });
+          }
+          
+          // Safe ISO 8601 duration parser
+          function parseDuration(duration) {
+            if (!duration) {
+              console.log('Warning: Empty duration string');
+              return 0;
+            }
+            
+            const hoursMatch = duration.match(/(\d+)H/);
+            const minutesMatch = duration.match(/(\d+)M/);
+            const secondsMatch = duration.match(/(\d+)S/);
+            
+            const hours = hoursMatch ? parseInt(hoursMatch[1], 10) : 0;
+            const minutes = minutesMatch ? parseInt(minutesMatch[1], 10) : 0;
+            const seconds = secondsMatch ? parseInt(secondsMatch[1], 10) : 0;
+            
+            const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+            console.log(`Parsed duration "${duration}" = ${totalSeconds} seconds`);
+            
+            return totalSeconds;
+          }
+          
+          // Main async function
+          async function updateVideos() {
+            try {
+              console.log('Starting YouTube video fetch...');
+              
+              // Step 1: Get recent videos from channel
+              const searchUrl = `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channelId}&part=snippet&order=date&maxResults=50&type=video`;
+              
+              console.log('Fetching videos from YouTube API...');
+              const searchData = await makeRequest(searchUrl);
+              
+              if (!searchData.items || searchData.items.length === 0) {
+                throw new Error('No videos found in search results');
+              }
+              
+              console.log(`Found ${searchData.items.length} videos in search results`);
+              
+              const videoIds = searchData.items.map(item => item.id.videoId).join(',');
+              
+              // Step 2: Get video details (duration)
+              const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?key=${apiKey}&id=${videoIds}&part=contentDetails,snippet`;
+              
+              console.log('Fetching video details...');
+              const detailsData = await makeRequest(detailsUrl);
+              
+              if (!detailsData.items) {
+                throw new Error('No items in details response');
+              }
+              
+              console.log(`Received details for ${detailsData.items.length} videos`);
+              
+              // Filter: Only videos longer than 60 seconds
+              let filtered = detailsData.items.filter(item => {
+                const duration = parseDuration(item.contentDetails.duration);
+                const publishedAt = new Date(item.snippet.publishedAt);
+
+                const isLongEnough = duration > 60;
+
+                if (isLongEnough) {
+                  console.log(`✓ Keep: "${item.snippet.title}" (${duration}s, ${publishedAt.toISOString()})`);
+                  return true;
+                }
+
+                console.log(`✗ Skip: "${item.snippet.title}" (${duration}s, ${publishedAt.toISOString()})`);
+                return false;
+              });
+
+              // Sort by publish date descending (newest first)
+              filtered.sort((a, b) => {
+                return new Date(b.snippet.publishedAt) - new Date(a.snippet.publishedAt);
+              });
+              
+              // Keep only 5 most recent
+              const topFive = filtered.slice(0, 5);
+              
+              console.log(`Final result: ${topFive.length} videos selected (newest 5)`);
+              
+              // Format for website
+              const output = {
+                items: topFive.map(item => ({
+                  id: { videoId: item.id },
+                  snippet: item.snippet
+                }))
+              };
+              
+              // Write to file
+              fs.writeFileSync('videos.json', JSON.stringify(output, null, 2));
+              console.log('videos.json written successfully');
+              
+              process.exit(0);
+              
+            } catch (error) {
+              console.error('Error:', error.message);
+              process.exit(1);
+            }
+          }
+          
+          // Run the main function
+          updateVideos();
+          EOF
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+      
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add videos.json
+          git commit -m "Update YouTube videos" || echo "No changes to commit"
+          git push
