@@ -346,6 +346,34 @@ box-shadow:
             padding-top: 2rem;
         }
 
+
+        .sidebar-admin-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .55rem;
+            width: 100%;
+            margin: 0 0 1rem;
+            padding: .72rem .9rem;
+            border: 1px solid rgba(0,217,255,.28);
+            border-radius: 9px;
+            background: rgba(0,217,255,.055);
+            color: rgba(255,255,255,.78);
+            text-decoration: none;
+            font-size: .78rem;
+            font-weight: 600;
+            letter-spacing: 1.4px;
+            transition: all .25s ease;
+        }
+
+        .sidebar-admin-link:hover {
+            color: #fff;
+            border-color: rgba(0,217,255,.62);
+            background: rgba(0,217,255,.13);
+            box-shadow: 0 0 18px rgba(0,217,255,.12);
+            transform: translateY(-1px);
+        }
+
         .sidebar-social {
             display: flex;
             gap: 1rem;
@@ -4532,6 +4560,9 @@ text-shadow:
 </nav>
 
             <div class="sidebar-footer">
+                <a class="sidebar-admin-link" href="admin/" title="Echo Craft Admin">
+                    <i class="fas fa-lock"></i> ADMIN
+                </a>
                 <div class="sidebar-social">
                     <a href="https://www.instagram.com/echocraft.music/" target="_blank" title="Instagram">
                         <i class="fab fa-instagram"></i>
