@@ -5,6 +5,21 @@
   "instructions": "Pending releases are intentionally not shown on the website until their richer Echo Craft metadata is added to music/music.json.",
   "items": [
     {
+      "collectionId": "6822880317",
+      "type": "single",
+      "title": "Midnight Syndicate - Single",
+      "artist": "Echo Craft",
+      "releaseDate": "2026-08-15",
+      "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/b6/96/d1/b696d18c-846e-7123-d05e-d1e813d97e70/artwork.jpg/1200x1200bb.jpg",
+      "apple": "https://music.apple.com/us/album/midnight-syndicate-single/6822880317?uo=4",
+      "trackCount": 1,
+      "genre": "Hip-Hop/Rap",
+      "source": "apple-music-catalog",
+      "status": "pending",
+      "detectedAt": "2026-10-15T10:26:59.095Z",
+      "note": "Detected automatically. Add HyperFollow/Spotify/preview details before publishing to music/music.json."
+    },
+    {
       "collectionId": "6821369517",
       "type": "single",
       "title": "He's A Light Through Darkness (CineTrap Mix) - Single",
